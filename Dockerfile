@@ -139,6 +139,10 @@ RUN set -ex; \
     a2enmod mpm_prefork; \
     a2enmod headers rewrite remoteip; \
     { \
+        echo 'ServerName localhost'; \
+    } > $APACHE_CONFDIR/conf-available/servername.conf; \
+    a2enconf servername; \
+    { \
         echo RemoteIPHeader X-Real-IP; \
         echo RemoteIPTrustedProxy 10.0.0.0/8; \
         echo RemoteIPTrustedProxy 172.16.0.0/12; \
