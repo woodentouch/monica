@@ -16,6 +16,8 @@ docker-compose.dev.yml
 Dockerfile
 Dockerfile.dev
 .dockerignore
+railway.json
+railway.env.example
 docs/
 fortrabbit.yml
 Homestead.*
