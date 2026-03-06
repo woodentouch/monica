@@ -31,6 +31,12 @@ if expr "$1" : "apache" 1>/dev/null || [ "$1" = "php-fpm" ]; then
     ROOT=/var/www/html
     ARTISAN="php ${ROOT}/artisan"
 
+    # Railway expects the app to listen on $PORT.
+    APP_PORT="${PORT:-80}"
+    sed -ri "s/^Listen [0-9]+$/Listen ${APP_PORT}/" /etc/apache2/ports.conf
+    sed -ri "s/<VirtualHost \*:[0-9]+>/<VirtualHost *:${APP_PORT}>/" /etc/apache2/sites-available/000-default.conf
+    echo "Apache configured to listen on port ${APP_PORT}."
+
     # Ensure storage directories are present
     STORAGE=${ROOT}/storage
     mkdir -p ${STORAGE}/logs
