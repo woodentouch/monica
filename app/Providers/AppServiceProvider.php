@@ -132,6 +132,10 @@ class AppServiceProvider extends ServiceProvider
         if (Config::get('app.force_url') === true) {
             URL::forceRootUrl(Str::of(config('app.url'))->ltrim('/'));
             URL::forceScheme('https');
+        } elseif ($this->app->environment('production')) {
+            // Behind reverse proxies (Railway), requests can appear as HTTP.
+            // Force HTTPS URL generation to avoid mixed-content assets.
+            URL::forceScheme('https');
         }
 
         RedirectIfAuthenticated::redirectUsing(fn () => route('vault.index', absolute: false));
