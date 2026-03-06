@@ -31,6 +31,9 @@ if expr "$1" : "apache" 1>/dev/null || [ "$1" = "php-fpm" ]; then
     ROOT=/var/www/html
     ARTISAN="php ${ROOT}/artisan"
 
+    # Avoid stale bootstrap/cache config using old environment values.
+    ${ARTISAN} config:clear >/dev/null 2>&1 || true
+
     # Ensure only one Apache MPM is enabled at runtime.
     a2dismod mpm_event mpm_worker >/dev/null 2>&1 || true
     a2enmod mpm_prefork >/dev/null 2>&1 || true
@@ -51,8 +54,19 @@ if expr "$1" : "apache" 1>/dev/null || [ "$1" = "php-fpm" ]; then
     chown -R www-data:www-data ${STORAGE}
     chmod -R g+rw ${STORAGE}
 
+    # Fallback to SQLite when an unreachable local MariaDB/MySQL config is present.
+    if [ "${DB_CONNECTION:-sqlite}" = "mariadb" ] || [ "${DB_CONNECTION:-sqlite}" = "mysql" ]; then
+        if [ -z "${DB_HOST:-}" ] || [ "${DB_HOST:-}" = "127.0.0.1" ] || [ "${DB_HOST:-}" = "localhost" ]; then
+            echo "DB_CONNECTION=${DB_CONNECTION} with DB_HOST=${DB_HOST:-<empty>} is not usable on Railway single-service deploy; falling back to sqlite."
+            export DB_CONNECTION="sqlite"
+            unset DATABASE_URL
+        fi
+    fi
+
     if [ "${DB_CONNECTION:-sqlite}" == "sqlite" ]; then
-        dbPath="${DB_DATABASE:-database/database.sqlite}"
+        dbPath="${DB_DATABASE:-/var/www/html/storage/database.sqlite}"
+        export DB_DATABASE="$dbPath"
+        unset SESSION_CONNECTION
         if [ ! -f "$dbPath" ]; then
             echo "Creating sqlite database at ${dbPath} — make sure it will be saved in a persistent volume."
             touch "$dbPath"

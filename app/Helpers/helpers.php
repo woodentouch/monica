@@ -126,6 +126,6 @@ if (! function_exists('readVersion')) {
             $content = trim(exec("$command 2>".(substr(php_uname(), 0, 7) === 'Windows' ? 'NUL' : '/dev/null')));
         }
 
-        return trim($content ?? $default);
+        return trim((string) ($content ?? $default ?? ''));
     }
 }
