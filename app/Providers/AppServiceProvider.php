@@ -135,6 +135,16 @@ class AppServiceProvider extends ServiceProvider
         } elseif ($this->app->environment('production')) {
             // Behind reverse proxies (Railway), requests can appear as HTTP.
             // Force HTTPS URL generation to avoid mixed-content assets.
+            $rootUrl = preg_replace('/^http:\/\//i', 'https://', (string) config('app.url'));
+            if (! empty($rootUrl)) {
+                URL::forceRootUrl(rtrim($rootUrl, '/'));
+            }
+
+            $assetUrl = config('app.asset_url');
+            if (is_string($assetUrl) && $assetUrl !== '') {
+                Config::set('app.asset_url', preg_replace('/^http:\/\//i', 'https://', $assetUrl));
+            }
+
             URL::forceScheme('https');
         }
 
