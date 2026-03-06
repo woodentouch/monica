@@ -58,9 +58,13 @@ if expr "$1" : "apache" 1>/dev/null || [ "$1" = "php-fpm" ]; then
         echo "APP_KEY already set."
     fi
 
-    # Run migrations
-    ${ARTISAN} waitfordb
-    ${ARTISAN} monica:setup --force -vv
+    # Run migrations but do not block web startup if setup fails.
+    if ! ${ARTISAN} waitfordb; then
+        echo "Warning: waitfordb failed, continuing startup so the app logs remain accessible."
+    fi
+    if ! ${ARTISAN} monica:setup --force --skip-docs -vv; then
+        echo "Warning: monica:setup failed, continuing startup."
+    fi
 
     # if [ ! -f "${STORAGE}/oauth-public.key" -o ! -f "${STORAGE}/oauth-private.key" ]; then
     #     echo "Passport keys creation ..."
