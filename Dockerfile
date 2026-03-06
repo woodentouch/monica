@@ -135,6 +135,8 @@ RUN set -ex; \
 
 RUN set -ex; \
     \
+    a2dismod mpm_event mpm_worker || true; \
+    a2enmod mpm_prefork; \
     a2enmod headers rewrite remoteip; \
     { \
         echo RemoteIPHeader X-Real-IP; \
