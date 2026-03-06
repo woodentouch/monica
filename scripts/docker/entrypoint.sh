@@ -26,6 +26,35 @@ for secret in "${supportedSecrets[@]}"; do
     fi
 done
 
+# Railway variables may include accidental wrapping quotes.
+sanitize_env_var() {
+    local var_name="$1"
+    local value="${!var_name:-}"
+
+    value="${value#\"}"
+    value="${value%\"}"
+    value="${value#\'}"
+    value="${value%\'}"
+
+    export "${var_name}=${value}"
+}
+
+is_valid_app_key() {
+    php -r '
+        $key = getenv("APP_KEY") ?: "";
+        if (str_starts_with($key, "base64:")) {
+            $decoded = base64_decode(substr($key, 7), true);
+            if ($decoded !== false && (strlen($decoded) === 16 || strlen($decoded) === 32)) {
+                exit(0);
+            }
+            exit(1);
+        }
+        exit((strlen($key) === 16 || strlen($key) === 32) ? 0 : 1);
+    '
+}
+
+sanitize_env_var "APP_KEY"
+
 if expr "$1" : "apache" 1>/dev/null || [ "$1" = "php-fpm" ]; then
 
     ROOT=/var/www/html
@@ -74,10 +103,11 @@ if expr "$1" : "apache" 1>/dev/null || [ "$1" = "php-fpm" ]; then
         fi
     fi
 
-    if [ -z "${APP_KEY:-}" ]; then
-        ${ARTISAN} key:generate --no-interaction
-        key=$(grep APP_KEY .env | cut -c 9-)
-        echo "APP_KEY generated: $key — save it for later usage."
+    if [ -z "${APP_KEY:-}" ] || ! is_valid_app_key; then
+        APP_KEY="base64:$(php -r 'echo base64_encode(random_bytes(32));')"
+        export APP_KEY
+        sed -ri "s#^APP_KEY=.*#APP_KEY=${APP_KEY}#" .env
+        echo "APP_KEY was missing/invalid and has been regenerated: ${APP_KEY} — save it in Railway Variables."
     else
         echo "APP_KEY already set."
     fi
