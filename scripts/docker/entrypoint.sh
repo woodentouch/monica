@@ -31,6 +31,10 @@ if expr "$1" : "apache" 1>/dev/null || [ "$1" = "php-fpm" ]; then
     ROOT=/var/www/html
     ARTISAN="php ${ROOT}/artisan"
 
+    # Ensure only one Apache MPM is enabled at runtime.
+    a2dismod mpm_event mpm_worker >/dev/null 2>&1 || true
+    a2enmod mpm_prefork >/dev/null 2>&1 || true
+
     # Railway expects the app to listen on $PORT.
     APP_PORT="${PORT:-80}"
     sed -ri "s/^Listen [0-9]+$/Listen ${APP_PORT}/" /etc/apache2/ports.conf
