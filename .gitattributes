@@ -10,7 +10,6 @@
 /.platform export-ignore
 /.vscode export-ignore
 /tests export-ignore
-/scripts export-ignore
 .gitattributes export-ignore
 .gitignore export-ignore
 .releaserc export-ignore
