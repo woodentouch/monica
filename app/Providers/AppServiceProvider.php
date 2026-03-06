@@ -130,7 +130,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
         if (Config::get('app.force_url') === true) {
-            URL::forceRootUrl(Str::of(config('app.url'))->ltrim('/'));
+            $rootUrl = preg_replace('/^http:\/\//i', 'https://', (string) config('app.url'));
+            URL::forceRootUrl(Str::of((string) $rootUrl)->ltrim('/'));
             URL::forceScheme('https');
         } elseif ($this->app->environment('production')) {
             // Behind reverse proxies (Railway), requests can appear as HTTP.
